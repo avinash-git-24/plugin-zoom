@@ -1,11 +1,12 @@
 package io.kestra.plugin.zoom;
 
 import io.kestra.core.http.HttpRequest;
+import io.kestra.core.http.HttpResponse;
 import io.kestra.core.models.property.Property;
 import io.kestra.core.models.tasks.RunnableTask;
 import io.kestra.core.runners.RunContext;
-import io.kestra.core.models.tasks.VoidOutput;
 import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -82,7 +83,7 @@ import java.util.Map;
         )
     }
 )
-public class SendMessage extends AbstractZoomConnection implements RunnableTask<VoidOutput> {
+public class SendMessage extends AbstractZoomConnection implements RunnableTask<SendMessage.Output> {
     @Schema(
         title = "Zoom User ID",
         description = "The Zoom user ID associated with the chat"
@@ -114,7 +115,7 @@ public class SendMessage extends AbstractZoomConnection implements RunnableTask<
     private Property<String> message;
 
     @Override
-    public VoidOutput run(RunContext runContext) throws Exception{
+    public Output run(RunContext runContext) throws Exception {
         String userId = runContext.render(this.userId)
             .as(String.class)
             .orElseThrow(() -> new IllegalArgumentException("'userId' is required"));
@@ -158,12 +159,28 @@ public class SendMessage extends AbstractZoomConnection implements RunnableTask<
             HttpRequest.JsonRequestBody.of(body)
         );
 
-        execute(
+        HttpResponse<Map> response = execute(
             runContext,
             request,
             Map.class
         );
 
-        return null;
+        String messageId = null;
+        if (response != null && response.getBody() != null && response.getBody().get("id") != null) {
+            messageId = response.getBody().get("id").toString();
+        }
+
+        return Output.builder()
+            .messageId(messageId)
+            .build();
+    }
+
+    @Builder
+    @Getter
+    public static class Output implements io.kestra.core.models.tasks.Output {
+        @Schema(
+            title = "The ID of the sent message"
+        )
+        private String messageId;
     }
 }

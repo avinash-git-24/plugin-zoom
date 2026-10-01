@@ -15,6 +15,7 @@ import java.util.Map;
 import io.kestra.core.models.flows.Flow;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -98,7 +99,8 @@ class SendMessageTest {
 
         var output = task.run(runContext);
 
-        assertThat(output, nullValue());
+        assertThat(output, notNullValue());
+        assertThat(output.getMessageId(), equalTo("test-message-id"));
         assertThat(FakeZoomController.lastAuthorizationHeader, equalTo("Bearer test-access-token"));
         assertThat(FakeZoomController.lastMessageBody.get("to_channel"), equalTo("test-channel"));
         assertThat(FakeZoomController.lastMessageBody.get("message"), equalTo("Hello"));
@@ -123,8 +125,10 @@ class SendMessageTest {
             .oauthTokenUrl(baseUrl + "oauth/token")
             .build();
 
-        task.run(runContext);
+        var output = task.run(runContext);
 
+        assertThat(output, notNullValue());
+        assertThat(output.getMessageId(), equalTo("test-message-id"));
         assertThat(FakeZoomController.lastAuthorizationHeader, equalTo("Bearer test-access-token"));
         assertThat(FakeZoomController.lastMessageBody.get("to_contact"), equalTo("test@example.com"));
         assertThat(FakeZoomController.lastMessageBody.get("message"), equalTo("Hello"));
@@ -254,6 +258,34 @@ class SendMessageTest {
             );
         } finally {
             FakeZoomController.simulateEmptyApiResponse = false;
+        }
+    }
+
+    @Test
+    void shouldHandleResponseWithoutMessageId() throws Exception {
+        RunContext runContext = createRunContext();
+        embeddedServer = applicationContext.getBean(EmbeddedServer.class);
+        String baseUrl = embeddedServer.getURL().toString() + "/";
+
+        FakeZoomController.returnEmptyMessageId = true;
+
+        SendMessage task = TestSendMessage.builder()
+            .userId(Property.of("test-user"))
+            .channel(Property.of("test-channel"))
+            .message(Property.of("Hello"))
+            .accountId(Property.of("test-account"))
+            .clientId(Property.of("test-client"))
+            .clientSecret(Property.of("test-secret"))
+            .baseUrl(Property.of(baseUrl))
+            .oauthTokenUrl(baseUrl + "oauth/token")
+            .build();
+
+        try {
+            var output = task.run(runContext);
+            assertThat(output, notNullValue());
+            assertThat(output.getMessageId(), nullValue());
+        } finally {
+            FakeZoomController.returnEmptyMessageId = false;
         }
     }
 }
