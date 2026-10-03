@@ -49,6 +49,6 @@ public class FakeZoomController {
         if (returnEmptyMessageId) {
             return HttpResponse.ok(Map.of());
         }
-        return HttpResponse.ok(Map.of("id", "test-message-id"));
+        return HttpResponse.created(Map.of("id", "test-message-id"));
     }
 }

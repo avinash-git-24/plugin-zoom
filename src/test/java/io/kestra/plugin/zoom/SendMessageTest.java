@@ -224,8 +224,10 @@ class SendMessageTest {
             .oauthTokenUrl(baseUrl + "/oauth/token")
             .build();
 
-        task.run(runContext);
+        var output = task.run(runContext);
 
+        assertThat(output, notNullValue());
+        assertThat(output.getMessageId(), equalTo("test-message-id"));
         assertThat(FakeZoomController.lastAuthorizationHeader, equalTo("Bearer test-access-token"));
         assertThat(FakeZoomController.lastMessageBody.get("to_channel"), equalTo("test-channel"));
         assertThat(FakeZoomController.lastMessageBody.get("message"), equalTo("Hello"));
@@ -270,13 +272,13 @@ class SendMessageTest {
         FakeZoomController.returnEmptyMessageId = true;
 
         SendMessage task = TestSendMessage.builder()
-            .userId(Property.of("test-user"))
-            .channel(Property.of("test-channel"))
-            .message(Property.of("Hello"))
-            .accountId(Property.of("test-account"))
-            .clientId(Property.of("test-client"))
-            .clientSecret(Property.of("test-secret"))
-            .baseUrl(Property.of(baseUrl))
+            .userId(Property.ofValue("test-user"))
+            .channel(Property.ofValue("test-channel"))
+            .message(Property.ofValue("Hello"))
+            .accountId(Property.ofValue("test-account"))
+            .clientId(Property.ofValue("test-client"))
+            .clientSecret(Property.ofValue("test-secret"))
+            .baseUrl(Property.ofValue(baseUrl))
             .oauthTokenUrl(baseUrl + "oauth/token")
             .build();
 
